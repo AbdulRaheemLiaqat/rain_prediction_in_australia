@@ -19,6 +19,14 @@ label_encoders = joblib.load("label_encoders.pkl")
 selected_model_name = st.selectbox("Select Model", list(models.keys()))
 model = models[selected_model_name]
 
+feature_order = [
+    "Date", "Location", "MinTemp", "MaxTemp", "Rainfall", "Evaporation",
+    "Sunshine", "WindGustDir", "WindGustSpeed", "WindDir9am",
+    "WindDir3pm", "WindSpeed9am", "WindSpeed3pm", "Humidity9am",
+    "Humidity3pm", "Pressure9am", "Pressure3pm", "Cloud9am",
+    "Cloud3pm", "Temp9am", "Temp3pm", "RainToday"
+]
+
 inputs = {}
 
 for col, le in label_encoders.items():
@@ -36,18 +44,17 @@ for col in numeric_features:
     inputs[col] = st.number_input(col, value=0.0)
 
 input_df = pd.DataFrame([inputs])
-
-all_features = numeric_features + [col for col in label_encoders if col != "RainTomorrow"]
-input_df = input_df[all_features]
+input_df = input_df.reindex(columns=feature_order)
 
 for col in numeric_features:
-    input_df[col] = input_df[col].astype(float)
+    if col in input_df.columns:
+        input_df[col] = input_df[col].astype(float)
 
 for col, le in label_encoders.items():
     if col in input_df.columns:
         input_df[col] = le.transform(input_df[col])
 
-input_scaled = scaler.transform(input_df)
+input_scaled = scaler.transform(input_df.values)
 
 if st.button("Predict"):
     prediction = model.predict(input_scaled)[0]
